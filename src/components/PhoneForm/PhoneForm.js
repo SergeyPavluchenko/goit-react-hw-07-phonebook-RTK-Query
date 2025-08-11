@@ -1,9 +1,10 @@
 import { Formik, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { ButtonContact, Form, Field } from './PhoneFormStyled';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { addContactThunk } from '../../redux/thunk/thunk';
 import { Notify } from 'notiflix';
+import { useGetContactsQuery } from '../../redux/API/contactAPI';
 
 const PhoneSchema = Yup.object().shape({
   name: Yup.string()
@@ -18,7 +19,7 @@ const PhoneSchema = Yup.object().shape({
 
 export const PhoneForm = () => {
   const dispatch = useDispatch();
-  const contactsSelector = useSelector(state => state.contacts.contacts.items);
+  const { data = [] } = useGetContactsQuery();
 
   return (
     <div>
@@ -29,7 +30,7 @@ export const PhoneForm = () => {
           number: '',
         }}
         onSubmit={(values, actions) => {
-          contactsSelector.find(
+          data.find(
             contact =>
               contact.name === values.name || contact.number === values.number
           )

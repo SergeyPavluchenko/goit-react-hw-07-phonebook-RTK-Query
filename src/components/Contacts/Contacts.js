@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Filter } from 'components/filter/Filter';
 // import { removeContact } from '../../redux/contactSlice/contactSlice';
 import { deleteContactThunk } from '../../redux/thunk/thunk';
+import { useGetContactsQuery } from '../../redux/API/contactAPI';
 import {
   LiStyle,
   UlStyle,
@@ -12,35 +13,41 @@ import {
 import '../loader/loading.css';
 
 export const Contacts = () => {
-  const initialContacts = useSelector(state => state.contacts.contacts.items);
+  const { data = [], error, isLoading, isFetching } = useGetContactsQuery();
   const filter = useSelector(state => state.filter);
-  const isLoading = useSelector(state => state.contacts.contacts.isLoading);
-
   const dispatch = useDispatch();
 
-  const filteredContacts = initialContacts.filter(contact =>
+  const filteredContacts = data.filter(contact =>
     contact.name.toLowerCase().includes(filter.toLowerCase())
   );
+
+  let content;
+  if (isLoading || isFetching) content = <div className="loader" />;
+  else if (error) {
+    const msg = error?.data?.message || error?.error || 'Помилка завантаження';
+    content = <p>{msg}</p>;
+  } else {
+    content = (
+      <UlStyleContactList>
+        {' '}
+        {filteredContacts.map(({ id, name, number }) => (
+          <LiStyle key={id}>
+            {name}: {number}
+            <ButtonDel>
+              <MdDelete onClick={() => dispatch(deleteContactThunk(id))} />
+            </ButtonDel>
+          </LiStyle>
+        ))}
+      </UlStyleContactList>
+    );
+  }
 
   return (
     <div>
       <h1>Contacts</h1>
       <UlStyle>
         <Filter />
-        {isLoading ? (
-          <div class="loader"></div>
-        ) : (
-          <UlStyleContactList>
-            {filteredContacts.map(({ id, name, number }) => (
-              <LiStyle key={id}>
-                {name}: {number}
-                <ButtonDel>
-                  <MdDelete onClick={() => dispatch(deleteContactThunk(id))} />
-                </ButtonDel>
-              </LiStyle>
-            ))}
-          </UlStyleContactList>
-        )}
+        {content}
       </UlStyle>
     </div>
   );
