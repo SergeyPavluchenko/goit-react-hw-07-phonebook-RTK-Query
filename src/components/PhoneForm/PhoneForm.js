@@ -1,10 +1,11 @@
 import { Formik, ErrorMessage } from 'formik';
 import * as Yup from 'yup';
 import { ButtonContact, Form, Field } from './PhoneFormStyled';
-import { useDispatch } from 'react-redux';
-import { addContactThunk } from '../../redux/thunk/thunk';
 import { Notify } from 'notiflix';
-import { useGetContactsQuery } from '../../redux/API/contactAPI';
+import {
+  useAddContactMutation,
+  useGetContactsQuery,
+} from '../../redux/API/contactAPI';
 
 const PhoneSchema = Yup.object().shape({
   name: Yup.string()
@@ -18,8 +19,18 @@ const PhoneSchema = Yup.object().shape({
 });
 
 export const PhoneForm = () => {
-  const dispatch = useDispatch();
   const { data = [] } = useGetContactsQuery();
+  const [addContact] = useAddContactMutation();
+
+  const handleSubmit = async body => {
+    try {
+      await addContact(body).unwrap();
+      Notify.success('Контакт додано');
+    } catch (err) {
+      console.log(err);
+      Notify.failure('Упс, сталась помилка');
+    }
+  };
 
   return (
     <div>
@@ -29,18 +40,13 @@ export const PhoneForm = () => {
           name: '',
           number: '',
         }}
-        onSubmit={(values, actions) => {
+        onSubmit={async (values, actions) => {
           data.find(
             contact =>
               contact.name === values.name || contact.number === values.number
           )
             ? Notify.failure(values.name + 'is already in contact')
-            : dispatch(
-                addContactThunk({
-                  ...values,
-                })
-              );
-
+            : handleSubmit(values);
           actions.resetForm();
         }}
         validationSchema={PhoneSchema}
@@ -64,7 +70,14 @@ export const PhoneForm = () => {
           />
           <ErrorMessage name="number" />
 
-          <ButtonContact type="submit">Add contact</ButtonContact>
+          <ButtonContact
+            onSubmit={e => {
+              e.preventDefault();
+            }}
+            type="submit"
+          >
+            Add contact
+          </ButtonContact>
         </Form>
       </Formik>
     </div>
